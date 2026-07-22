@@ -24,6 +24,7 @@ let aiLevel = 'novice';
 
 const boardEl = document.querySelector('#board');
 const statusEl = document.querySelector('#status');
+const matchContextEl = document.querySelector('#match-context');
 const toastEl = document.querySelector('#toast');
 const skipEl = document.querySelector('#skip-bonus');
 const menuEl = document.querySelector('#main-menu');
@@ -37,6 +38,9 @@ function notify(message) {
 function resetSelection() { selectedPiece = null; selectedFrom = null; }
 const isAiTurn = () => matchMode === 'pve' && game.currentPlayer !== humanPlayer && !game.winner;
 const aiName = () => aiLevel === 'court' ? '宫廷棋手' : '见习棋手';
+const colorName = player => player === 'p1' ? '金色' : '银色';
+const sideName = player => player === 'p1' ? '先手' : '后手';
+const roleName = player => matchMode !== 'pve' ? labels[player] : player === humanPlayer ? '你' : aiName();
 
 function scheduleAiTurn() {
   clearTimeout(aiTimer);
@@ -65,7 +69,11 @@ function renderInventory(player) {
   const panel = document.querySelector(`#${player}-panel`);
   const active = game.currentPlayer === player && !game.winner;
   panel.classList.toggle('active', active);
-  panel.innerHTML = `<div class="player-title"><span>${labels[player]}</span>${active ? '<b>行动中</b>' : ''}</div>
+  panel.classList.toggle('human-panel', matchMode === 'pve' && player === humanPlayer);
+  panel.classList.toggle('opponent-panel', matchMode === 'pve' && player !== humanPlayer);
+  const role = roleName(player);
+  const identity = matchMode === 'pve' ? `${player === humanPlayer ? '你的阵营' : '对手阵营'} · ${colorName(player)} · ${sideName(player)}` : labels[player];
+  panel.innerHTML = `<div class="player-title"><span><strong>${role}</strong><small>${identity}</small></span>${active ? `<b>${player === humanPlayer || matchMode === 'pvp' ? '轮到你' : '思考中'}</b>` : ''}</div>
     <div class="inventory">${['king','queen','guard'].map(type => {
       const disabled = game.inventory[player][type] <= 0 || player !== game.currentPlayer || isAiTurn() || (game.phase === 'bonus' && PIECES[type] >= game.bonusMaxRank);
       return `<button class="piece-card ${selectedPiece===type&&player===game.currentPlayer?'selected':''}" data-piece="${type}" data-player="${player}" ${disabled?'disabled':''}>
@@ -78,6 +86,11 @@ function render() {
   gameScreenEl.classList.toggle('turn-p2', game.currentPlayer === 'p2' && !game.winner);
   gameScreenEl.classList.toggle('game-finished', Boolean(game.winner));
   renderInventory('p2'); renderInventory('p1');
+  matchContextEl.hidden = matchMode !== 'pve';
+  if (matchMode === 'pve') {
+    const opponent = humanPlayer === 'p1' ? 'p2' : 'p1';
+    matchContextEl.innerHTML = `<strong>你操控${colorName(humanPlayer)} · ${sideName(humanPlayer)}</strong><span>对手操控${colorName(opponent)} · ${sideName(opponent)}</span><small>随机第一手：系统已替先手随机放置 1 枚库存棋子，并计为先手第一回合。</small>`;
+  }
   const targets = new Set(allowedTargets());
   boardEl.innerHTML = game.board.map((cell, index) => {
     const top = topPiece(cell); const depth = cell.stack.length;
@@ -89,7 +102,8 @@ function render() {
   skipEl.hidden = game.phase !== 'bonus';
   statusEl.textContent = game.winner ? `${labels[game.winner]} 获胜！` : game.phase === 'bonus'
     ? `${aiThinking ? `${aiName()}正在思考` : labels[game.currentPlayer]}：选择一枚更低级棋子行动，或放弃`
-    : aiThinking ? `第 ${game.turn} 回合 · ${aiName()}正在思考…`
+    : aiThinking ? `第 ${game.turn} 回合 · 对手（${colorName(game.currentPlayer)}）正在思考…`
+    : matchMode === 'pve' ? `第 ${game.turn} 回合 · 轮到你（${colorName(humanPlayer)}）· ${mode==='place'?'放置':mode==='move'?'移动':'回收'}`
     : `第 ${game.turn} 回合 · ${labels[game.currentPlayer]}行动 · ${mode==='place'?'放置':mode==='move'?'移动':'回收'}`;
   document.querySelector('.game-screen .eyebrow').textContent = matchMode === 'pve' ? `人机对战 · ${aiName()}` : '4 × 4 策略棋盘';
 }

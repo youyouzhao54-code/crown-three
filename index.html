@@ -43,6 +43,7 @@
       <p class="eyebrow">4 × 4 策略棋盘</p>
       <h1>王冠三连棋</h1>
       <p id="status" class="status" aria-live="polite"></p>
+      <div id="match-context" class="match-context" aria-live="polite"></div>
     </header>
 
     <section class="game-layout">
@@ -95,8 +96,8 @@
       <p class="dialog-intro">选择执棋顺序与对手强度。首版先开放见习棋手。</p>
       <fieldset class="choice-group">
         <legend>执棋顺序</legend>
-        <label><input type="radio" name="human-side" value="p1" checked><span><b>执金先行</b><small>你先落子</small></span></label>
-        <label><input type="radio" name="human-side" value="p2"><span><b>执蓝后行</b><small>AI 先落子</small></span></label>
+        <label><input type="radio" name="human-side" value="p1" checked><span><b>执金先手</b><small>系统替你随机放置第一枚棋子，随后对手行动</small></span></label>
+        <label><input type="radio" name="human-side" value="p2"><span><b>执银后手</b><small>对手的第一枚棋子随机放置，随后轮到你行动</small></span></label>
       </fieldset>
       <fieldset class="choice-group difficulty-group">
         <legend>对手难度</legend>
@@ -121,6 +122,8 @@
         <li><b>回收：</b>收回己方顶层棋子，再选择操作一枚等级更低的棋子，也可以放弃。</li>
       </ol>
       <p>等级：国王 ＞ 王后 ＞ 护卫。棋子不能进入障碍，也不能压住己方棋子。</p>
+      <h2>随机第一手</h2>
+      <p><b>先手的第一手由系统完成：</b>系统会从先手现有库存中随机抽取一枚棋子（可能是国王、王后或护卫），随机放到一个合法空位；这次放置计入先手第一回合，完成后立即轮到后手。</p>
     </article>
   </dialog>
   <div id="toast" class="toast" aria-live="assertive"></div>

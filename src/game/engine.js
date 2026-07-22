@@ -21,17 +21,20 @@ export function createGame(rng = Math.random) {
   const board = Array.from({ length: BOARD_SIZE * BOARD_SIZE }, (_, i) => ({ obstacle: obstacles.has(i), stack: [] }));
   const openingCells = board.map((cell, index) => cell.obstacle ? null : index).filter(index => index !== null);
   const openingIndex = openingCells[Math.floor(rng() * openingCells.length)];
-  board[openingIndex].stack.push({ player: 'p2', type: 'guard' });
   const inventory = clone(INITIAL_INVENTORY);
-  inventory.p2.guard--;
+  const openingPool = Object.entries(inventory.p1)
+    .flatMap(([type, count]) => Array.from({ length: count }, () => type));
+  const openingPiece = openingPool[Math.floor(rng() * openingPool.length)];
+  board[openingIndex].stack.push({ player: 'p1', type: openingPiece });
+  inventory.p1[openingPiece]--;
   return {
     board,
     inventory,
-    currentPlayer: 'p1',
+    currentPlayer: 'p2',
     phase: 'main',
     bonusMaxRank: null,
     winner: null,
-    turn: 1,
+    turn: 2,
   };
 }
 
