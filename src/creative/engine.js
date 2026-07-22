@@ -25,6 +25,8 @@ function payCreativeAction(game){const actor=game.players[game.currentPlayer];if
 export function canCreativeLand(game,index,level,player=game.currentPlayer) {
   const cell=game.board[index], rank=Number(level);
   if(!cell || !CREATIVE_LEVELS.includes(rank) || game.players[player].inventory[rank]<=0) return false;
+  const actor=game.players[player];
+  if(actor.skillId==='duo-shi'&&rank>1&&(actor.skillState.placedByLevel[rank-1]??0)<rank-1)return false;
   const top=topCreativePiece(cell);
   return !top || canCreativeSuppress(game,{player,level:rank,target:top});
 }
@@ -73,6 +75,7 @@ export function placeCreativePiece(state,index,level) {
   payCreativeAction(game);
   const target=topCreativePiece(game.board[index]);
   game.players[player].inventory[rank]--;
+  if(game.players[player].skillId==='duo-shi')game.players[player].skillState.placedByLevel[rank]=(game.players[player].skillState.placedByLevel[rank]??0)+1;
   const piece={player,level:rank};
   game.board[index].stack.push(piece);
   game.history.push({type:'place',player,index,level:rank});

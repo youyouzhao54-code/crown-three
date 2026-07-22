@@ -2,8 +2,8 @@ export const CREATIVE_ROLES = Object.freeze([
   {
     id: 'liu-san-dao', name: '刘三刀', title: '悍将', faction: '群雄',
     description: '我部悍将刘三刀，擅长通过快速获取高级棋子形成突破胜利。',
-    inventory: { 1: 12, 2: 6, 3: 1, 4: 0, 5: 0, 6: 0, 7: 0 },
-    skill: { id: 'duo-shi', name: '夺势', description: '【夺势】放置或移动形成二、三、四连时，分别获得一枚1、2、3级棋子；若本局受【霸关】影响，五连时获得一枚4级棋子。同时形成多种连线时只取最高。', hooks: { afterPlace:true, afterMove:true } },
+    inventory: { 1: 16, 2: 8, 3: 4, 4: 2, 5: 1, 6: 0, 7: 0 },
+    skill: { id: 'duo-shi', name: '夺势 · 连势', description: '【夺势】放置或移动形成二、三、四、五连时，分别获得一枚2、3、4、5级棋子；同时形成多种连线时只取最高。【连势】累计放置1枚1级棋子后才能放置2级，放置2枚2级后才能放置3级，依此类推。', hooks: { afterPlace:true, afterMove:true, canPlace:true } },
   },
   {
     id: 'zhao-yun', name: '赵云', title: '常山龙胆', faction: '蜀',
