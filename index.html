@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+  <meta name="theme-color" content="#171a20" />
+  <title>王冠三连棋</title>
+  <link rel="stylesheet" href="./src/styles.css" />
+</head>
+<body>
+  <section id="main-menu" class="main-menu" aria-label="主菜单">
+    <div class="menu-vignette"></div>
+    <div class="fog fog-back" aria-hidden="true"></div>
+    <div class="fog fog-left" aria-hidden="true"></div>
+    <div class="fog fog-right" aria-hidden="true"></div>
+    <div class="menu-content">
+      <p class="menu-kicker">A TACTICAL TABLETOP GAME</p>
+      <div class="menu-emblem" aria-hidden="true"><span>♔</span></div>
+      <h1 class="menu-title" data-text="王冠三连棋">王冠三连棋</h1>
+      <p class="menu-subtitle">落子 · 压制 · 重塑战局</p>
+      <nav class="menu-actions" aria-label="游戏模式">
+        <button class="menu-button" data-menu-action="pve">
+          <span><b>人机对战</b><small>挑战策略棋手</small></span><em class="available">见习开放</em>
+        </button>
+        <button class="menu-button" data-menu-action="pvp">
+          <span><b>双人对战</b><small>同屏轮流博弈</small></span><em class="available">开始</em>
+        </button>
+        <button class="menu-button" data-menu-action="creative">
+          <span><b>创意模式</b><small>自定义棋盘规则</small></span><em>敬请期待</em>
+        </button>
+        <div class="menu-secondary">
+          <button data-menu-action="settings">⚙ 设置</button>
+          <button data-menu-action="exit">↪ 退出</button>
+        </div>
+      </nav>
+      <p class="menu-version">界面版本 0.2 · 本地试玩版</p>
+    </div>
+  </section>
+
+  <main id="game-screen" class="app game-screen" hidden>
+    <div class="battle-shade" aria-hidden="true"></div>
+    <header class="hero">
+      <p class="eyebrow">4 × 4 策略棋盘</p>
+      <h1>王冠三连棋</h1>
+      <p id="status" class="status" aria-live="polite"></p>
+    </header>
+
+    <section class="game-layout">
+      <aside id="p2-panel" class="player-panel player-two"></aside>
+
+      <section class="table" aria-label="游戏棋盘">
+        <div id="board" class="board"></div>
+        <div class="legend">
+          <span><i class="dot obstacle-dot"></i>封印障碍</span>
+          <span>国王 ＞ 王后 ＞ 护卫</span>
+        </div>
+      </section>
+
+      <aside id="p1-panel" class="player-panel player-one"></aside>
+    </section>
+
+    <section class="controls">
+      <div class="mode-tabs" role="group" aria-label="行动选择">
+        <button data-mode="place">放置</button>
+        <button data-mode="move">移动</button>
+        <button data-mode="recycle">回收</button>
+      </div>
+      <div class="control-row">
+        <button id="back-menu" class="secondary">返回主菜单</button>
+        <button id="skip-bonus" class="secondary" hidden>放弃追加行动</button>
+        <button id="cancel" class="secondary">取消选择</button>
+        <button id="restart" class="danger">重新开始</button>
+        <button id="rules" class="secondary">规则</button>
+      </div>
+    </section>
+  </main>
+
+  <dialog id="settings-dialog" class="settings-dialog">
+    <article>
+      <button id="close-settings" class="dialog-close" aria-label="关闭">×</button>
+      <p class="eyebrow">设置</p>
+      <h2>游戏设置</h2>
+      <label class="setting-row"><span>背景音乐</span><input type="checkbox" disabled><small>后续版本开放</small></label>
+      <label class="setting-row"><span>游戏音效</span><input type="checkbox" disabled><small>后续版本开放</small></label>
+      <label class="setting-row"><span>落点提示</span><input type="checkbox" checked disabled><small>当前已启用</small></label>
+      <p class="setting-note">首版设置仅用于展示，暂不保存配置。</p>
+    </article>
+  </dialog>
+
+  <dialog id="pve-dialog" class="pve-dialog">
+    <article>
+      <button id="close-pve" class="dialog-close" aria-label="关闭">×</button>
+      <p class="eyebrow">人机对战</p>
+      <h2>迎战宫廷棋手</h2>
+      <p class="dialog-intro">选择执棋顺序与对手强度。首版先开放见习棋手。</p>
+      <fieldset class="choice-group">
+        <legend>执棋顺序</legend>
+        <label><input type="radio" name="human-side" value="p1" checked><span><b>执金先行</b><small>你先落子</small></span></label>
+        <label><input type="radio" name="human-side" value="p2"><span><b>执蓝后行</b><small>AI 先落子</small></span></label>
+      </fieldset>
+      <fieldset class="choice-group difficulty-group">
+        <legend>对手难度</legend>
+        <label><input type="radio" name="ai-level" value="novice" checked><span><b>见习棋手</b><small>会取胜，也会防守，但保留随机性</small></span></label>
+        <label><input type="radio" name="ai-level" value="court"><span><b>宫廷棋手</b><small>多步推演与局面评估</small></span></label>
+        <label class="locked"><input type="radio" name="ai-level" value="throne" disabled><span><b>王座棋手</b><small>深度搜索 · 开发中</small></span></label>
+      </fieldset>
+      <button id="start-pve" class="start-match">开始对局</button>
+    </article>
+  </dialog>
+
+  <dialog id="rules-dialog">
+    <article>
+      <button id="close-rules" class="dialog-close" aria-label="关闭">×</button>
+      <p class="eyebrow">规则 v0.1</p>
+      <h2>如何获胜</h2>
+      <p>让自己的顶层可见棋子在横、竖或斜线方向连续三枚。</p>
+      <h2>每回合选择一种行动</h2>
+      <ol>
+        <li><b>放置：</b>从库存放到空格，或压住等级更低的敌方棋子。</li>
+        <li><b>移动：</b>己方顶层棋子向上下左右相邻一格移动，也可以压制。</li>
+        <li><b>回收：</b>收回己方顶层棋子，再选择操作一枚等级更低的棋子，也可以放弃。</li>
+      </ol>
+      <p>等级：国王 ＞ 王后 ＞ 护卫。棋子不能进入障碍，也不能压住己方棋子。</p>
+    </article>
+  </dialog>
+  <div id="toast" class="toast" aria-live="assertive"></div>
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
