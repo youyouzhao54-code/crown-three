@@ -22,8 +22,7 @@ export function resolveCreativeAfterAction(game,{player,index,action,level}){
   const actor=game.players[player],messages=[];
   if(actor.skillId==='duo-shi'&&['place','move'].includes(action)){
     const length=longestLineThrough(game.board,index,player);
-    const lvBuBattle=Object.values(game.players).some(contender=>contender.skillId==='lv-bu');
-    if(length>=2&&(length<=4||length===5&&lvBuBattle)){const rewardLevel=length-1;actor.inventory[rewardLevel]++;messages.push(`【夺势】形成${length}连，获得1枚${rewardLevel}级棋子`)}
+    if(length>=2&&length<=5){const rewardLevel=length;actor.inventory[rewardLevel]++;messages.push(`【夺势】形成${length}连，获得1枚${rewardLevel}级棋子`)}
   }
   if(actor.skillId==='zhao-yun'&&action==='place'){
     const row=Math.floor(index/CREATIVE_SIZE),col=index%CREATIVE_SIZE;
