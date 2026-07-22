@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#17120d"><title>创意模式 · 群雄棋局</title><link rel="stylesheet" href="./src/creative/styles.css"><link rel="stylesheet" href="./src/creative/interaction.css"></head>
+<body>
+  <main class="creative-shell">
+    <header><a href="./index.html">← 返回主菜单</a><p>CREATIVE MODE · FRAMEWORK</p><h1>群雄棋局</h1><span>9×9 · 五子连珠 · 七阶棋子</span></header>
+    <section id="role-select" class="role-select">
+      <div class="select-title"><p>第一阶段</p><h2>选择出阵武将</h2><span>查看武将技能与初始棋子，选择本局的出阵角色。</span></div>
+      <div class="camp"><h3>黑方</h3><div id="black-roles" class="role-grid"></div></div>
+      <div class="camp"><h3>白方</h3><div id="white-roles" class="role-grid"></div></div>
+      <button id="start-creative" class="start">进入棋局</button>
+    </section>
+    <section id="creative-game" class="creative-game" hidden>
+      <aside id="white-player" class="player white-player"></aside>
+      <section class="war-table"><div id="creative-status" class="creative-status"></div><div id="creative-board" class="creative-board" aria-label="9乘9创意模式棋盘"></div><p class="board-hint">棋子落在横竖线交叉点 · 默认五枚顶层棋子连珠获胜 · 棋子等级上限为7</p></section>
+      <aside id="black-player" class="player black-player"></aside>
+      <div class="creative-controls"><div class="creative-modes"><button data-creative-mode="place">放置</button><button data-creative-mode="move">移动</button><button data-creative-mode="recycle">回收</button><button id="creative-skip" hidden>放弃追加行动</button><button id="lvbu-skip" hidden>不发动单三</button><button id="lvbu-pass" hidden>霸气不足，结束回合</button></div><div><button id="creative-audio">声音：开启</button><button id="creative-cancel">取消选择</button><button id="creative-restart">重新开始</button><button id="creative-change-role">更换武将</button><a href="./index.html">返回主菜单</a></div></div>
+    </section>
+  </main>
+  <script type="module" src="./src/creative/app.js"></script>
+</body></html>

@@ -178,7 +178,7 @@ document.querySelectorAll('[data-menu-action]').forEach(button => button.addEven
   } else if(action==='pve') pveDialog.showModal();
   else if(action==='settings') settingsDialog.showModal();
   else if(action==='exit') notify('网页游戏无法主动关闭窗口，请直接关闭当前页面');
-  else notify('创意模式正在筹备中');
+  else if(action==='creative') window.location.href='./creative.html';
 }));
 render();
 requestAnimationFrame(() => {
