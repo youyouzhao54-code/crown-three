@@ -35,6 +35,12 @@ export function resolveCreativeAfterAction(game,{player,index,action,level}){
     counts[placedLevel]=(counts[placedLevel]??0)+1;
     if(counts[placedLevel]>=2){counts[placedLevel]-=2;if(placedLevel<7){actor.inventory[placedLevel+1]++;messages.push(`【愈厉】累计放置两枚${placedLevel}级棋子，获得1枚${placedLevel+1}级棋子`)}}
   }
+  if(actor.skillId==='zhang-fei'&&action==='place'&&Number(level)===1){
+    const hand=[];for(let rank=1;rank<=6;rank++)for(let count=0;count<(actor.inventory[rank]??0);count++)hand.push(rank);
+    if(hand.length){const rank=hand[Math.floor(Math.random()*hand.length)];actor.inventory[rank]--;actor.inventory[rank+1]++;messages.push(`【狂啸】手中一枚${rank}级棋子升至${rank+1}级`)}
+    const enemy=player==='black'?'white':'black';
+    if(visibleCreativeStats(game,player).count<visibleCreativeStats(game,enemy).count){game.pendingExtraAction=true;messages.push('【狂啸】盘面棋子较少，可以继续行动')}
+  }
   if(messages.length)game.lastEffect={player,skill:actor.skillId,messages,message:messages.join('；')};
   return game;
 }
@@ -46,16 +52,17 @@ export function resolveCreativeRecycle(game,{player,piece}){
     returnedLevel=piece.level-2;
     game.lastEffect={player,skill:'zhao-yun',message:returnedLevel<=0?`【陷阵】${piece.level}级棋子回收后降至${returnedLevel}级并消失`:`【陷阵】${piece.level}级棋子回收后变为${returnedLevel}级`};
   }
+  if(game.players[player].skillId==='zhang-fei'&&piece.level>=2){returnedLevel=0;game.players[player].inventory[1]+=piece.level;game.lastEffect={player,skill:'zhang-fei',message:`【肃军】摧毁${piece.level}级棋子，获得${piece.level}枚1级棋子`}}
   return returnedLevel;
 }
 
 export function canCreativeSuppress(game,{player,level,target}){
   if(!target||target.player===player)return false;
+  if(game.players[target.player].skillId==='lu-xun'&&target.level%2===0&&level%2===1)return false;
   if(game.players[target.player].skillId==='lv-bu'&&level<target.level+2)return false;
   if(game.players[player].skillId==='lv-bu')return level>=target.level;
+  if(game.players[player].skillId==='lu-xun'&&level%2===1&&target.level%2===0)return true;
   if(level<=target.level)return false;
-  if(game.players[player].skillId==='lu-xun'&&level%2===1)return false;
-  if(game.players[target.player].skillId==='lu-xun'&&target.level%2===0)return false;
   return true;
 }
 
@@ -78,17 +85,55 @@ export function visibleCreativeStats(game,player){
 export function resolveCreativeTurnStart(game,rng=Math.random){
   const player=game.currentPlayer,actor=game.players[player];
   actor.skillState.actionPaid=false;
+  actor.skillState.turnsStarted=(actor.skillState.turnsStarted??0)+1;
+  if(actor.skillId==='zhao-yun'&&actor.skillState.turnsStarted===1&&!game.winner){
+    const empty=game.board.map((cell,index)=>cell.stack.length===0?index:null).filter(index=>index!==null);
+    if(empty.length){const index=empty[Math.floor(rng()*empty.length)];game.board[index].stack.push({player,level:7});const message=`【携幼】在第${Math.floor(index/CREATIVE_SIZE)+1}行第${index%CREATIVE_SIZE+1}列生成7级棋子`;game.lastEffect=game.lastEffect?{player,skill:'zhao-yun',message:`${game.lastEffect.message}；${message}`}:{player,skill:'zhao-yun',message}}
+  }
   if(actor.skillId==='lv-bu'&&!game.winner){
     actor.skillState.fury=Math.min(3,(actor.skillState.fury??1)+1);
-    if(actor.skillState.fury<2)game.phase='no-action';
+    if(actor.skillState.fury<2)game.phase=game.board.some(cell=>{const piece=topPiece(cell);return piece?.player===player&&piece.level>=5})?'lvbu-end':'no-action';
     const message=`【单三】回合开始，霸气恢复至${actor.skillState.fury}点`;
     game.lastEffect=game.lastEffect?{player,skill:'lv-bu',message:`${game.lastEffect.message}；${message}`}:{player,skill:'lv-bu',message};
     return game;
   }
   if(actor.skillId!=='lu-xun'||game.winner)return game;
-  const enemy=player==='black'?'white':'black',mine=visibleCreativeStats(game,player),theirs=visibleCreativeStats(game,enemy),rewards=[];
-  if(mine.count<theirs.count){const pool=[1,3,5],level=pool[Math.floor(rng()*pool.length)];actor.inventory[level]++;rewards.push(`${level}级奇数棋子`)}
-  if(mine.totalLevel<theirs.totalLevel){const pool=[2,4],level=pool[Math.floor(rng()*pool.length)];actor.inventory[level]++;rewards.push(`${level}级偶数棋子`)}
-  if(rewards.length){const message=`【逊礼】盘面处于劣势，获得${rewards.join('与')}`;game.lastEffect=game.lastEffect?{player,skill:'lu-xun',message:`${game.lastEffect.message}；${message}`}:{player,skill:'lu-xun',message}}
+  const oddTurn=actor.skillState.turnsStarted%2===1,level=oddTurn?1:2,amount=oddTurn?2:1;
+  actor.inventory[level]+=amount;
+  const message=`【谦节】第${actor.skillState.turnsStarted}个己方回合，获得${amount}枚${level}级棋子`;
+  game.lastEffect=game.lastEffect?{player,skill:'lu-xun',message:`${game.lastEffect.message}；${message}`}:{player,skill:'lu-xun',message};
+  return game;
+}
+
+export function resolveCreativeTurnEnd(game,rng=Math.random){
+  const player=game.currentPlayer,actor=game.players[player];
+  if(actor.skillId!=='lu-xun'||game.winner)return game;
+  const enemy=player==='black'?'white':'black',mine=visibleCreativeStats(game,player),theirs=visibleCreativeStats(game,enemy);
+  const needsPiece=mine.count<theirs.count,needsLevel=mine.totalLevel<theirs.totalLevel,messages=[];
+  if(needsPiece){
+    const empty=game.board.map((cell,index)=>cell.stack.length===0?index:null).filter(index=>index!==null);
+    const hand=[];for(let level=1;level<=7;level++)for(let count=0;count<(actor.inventory[level]??0);count++)hand.push(level);
+    if(empty.length&&hand.length){const level=hand[Math.floor(rng()*hand.length)],index=empty[Math.floor(rng()*empty.length)];actor.inventory[level]--;game.board[index].stack.push({player,level});messages.push(`将手中${level}级棋子置入第${Math.floor(index/CREATIVE_SIZE)+1}行第${index%CREATIVE_SIZE+1}列`)}
+  }
+  if(needsLevel){
+    const hand=[];for(let level=1;level<=6;level++)for(let count=0;count<(actor.inventory[level]??0);count++)hand.push(level);
+    if(hand.length){const level=hand[Math.floor(rng()*hand.length)];actor.inventory[level]--;actor.inventory[level+1]++;messages.push(`手中一枚${level}级棋子升至${level+1}级`)}
+  }
+  if(messages.length){const message=`【逊礼】${messages.join('；')}`;game.lastEffect=game.lastEffect?{player,skill:'lu-xun',message:`${game.lastEffect.message}；${message}`}:{player,skill:'lu-xun',message}}
+  return game;
+}
+
+export function resolveZhaoSevenMove(game,{player,from}){
+  if(game.players[player].skillId!=='zhao-yun')return game;
+  const revealed=topPiece(game.board[from]);
+  if(!revealed){
+    game.board[from].stack.push({player,level:1});
+    resolveCreativeAfterAction(game,{player,index:from,action:'place',level:1});
+    const message='【携幼】原位置为空，放置1级棋子';
+    game.lastEffect=game.lastEffect?{player,skill:'zhao-yun',message:`${game.lastEffect.message}；${message}`}:{player,skill:'zhao-yun',message};
+  }else{
+    game.board[from].stack.pop();revealed.level=Math.min(7,revealed.level+1);game.players[revealed.player].inventory[revealed.level]++;
+    game.lastEffect={player,skill:'zhao-yun',message:`【携幼】显露棋子升至${revealed.level}级并返回${revealed.player==='black'?'黑方':'白方'}手中`};
+  }
   return game;
 }
