@@ -11,12 +11,14 @@ export function createCreativeGame(blackRole, whiteRole) {
   const game={
     board: Array.from({length:CREATIVE_SIZE*CREATIVE_SIZE},()=>({stack:[]})),
     players: {
-      black: { roleId:blackRole.id, skillId:blackRole.skill.id, skillState:{placedByLevel:{},chargeByLevel:Object.fromEntries(CREATIVE_LEVELS.map(level=>[level,0])),fury:blackRole.skill.id==='lv-bu'?1:0,actionPaid:false,turnsStarted:0,caoMode:null,caoPlacements:0,caoFirstIndex:null,caoGuixinActive:true,caoCuanHanActive:true,caoCuanHanResolved:false,caoFinalTriggered:false}, inventory:inventoryOf(blackRole) },
-      white: { roleId:whiteRole.id, skillId:whiteRole.skill.id, skillState:{placedByLevel:{},chargeByLevel:Object.fromEntries(CREATIVE_LEVELS.map(level=>[level,0])),fury:whiteRole.skill.id==='lv-bu'?1:0,actionPaid:false,turnsStarted:0,caoMode:null,caoPlacements:0,caoFirstIndex:null,caoGuixinActive:true,caoCuanHanActive:true,caoCuanHanResolved:false,caoFinalTriggered:false}, inventory:inventoryOf(whiteRole) },
+      black: { roleId:blackRole.id, skillId:blackRole.skill.id, skillState:{placedByLevel:{},chargeByLevel:Object.fromEntries(CREATIVE_LEVELS.map(level=>[level,0])),fury:blackRole.skill.id==='lv-bu'?1:0,actionPaid:false,turnsStarted:0,caoMode:null,caoPlacements:0,caoFirstIndex:null,caoGuixinActive:true,caoEndDraws:0}, inventory:inventoryOf(blackRole) },
+      white: { roleId:whiteRole.id, skillId:whiteRole.skill.id, skillState:{placedByLevel:{},chargeByLevel:Object.fromEntries(CREATIVE_LEVELS.map(level=>[level,0])),fury:whiteRole.skill.id==='lv-bu'?1:0,actionPaid:false,turnsStarted:0,caoMode:null,caoPlacements:0,caoFirstIndex:null,caoGuixinActive:true,caoEndDraws:0}, inventory:inventoryOf(whiteRole) },
     },
     currentPlayer:'black', turn:1, phase:'main', bonusMaxRank:null, winner:null, winningLine:[], history:[], lastEffect:null,
   };
-  resolveCreativeTurnStart(game);
+  game.gameStartQueue=['black','white'].filter(side=>game.players[side].skillId==='cao-cao');
+  if(game.gameStartQueue.length){game.currentPlayer=game.gameStartQueue[0];game.phase='game-start-choice'}
+  else resolveCreativeTurnStart(game);
   return game;
 }
 
@@ -33,11 +35,12 @@ export function canCreativeLand(game,index,level,player=game.currentPlayer) {
   }
   const top=topCreativePiece(cell);
   if(actor.skillId==='zhang-fei'&&rank===1&&top?.player===player)return top.level<7&&!top.suJunBoosted;
+  if(actor.skillId==='cao-cao'&&actor.skillState.caoMode===1&&top?.player!==undefined&&top.player!==player)return false;
   return !top || canCreativeSuppress(game,{player,level:rank,target:top});
 }
 
 export function legalCreativePlacements(game,level) {
-  if(game.phase==='cao-choice')return [];
+  if(['cao-choice','game-start-choice'].includes(game.phase))return [];
   const rank=Number(level);
   const actor=game.players[game.currentPlayer];
   if(actor.skillId==='cao-cao'&&actor.skillState.caoMode===0){
@@ -49,7 +52,7 @@ export function legalCreativePlacements(game,level) {
 }
 
 export function legalCreativeMoves(game,from) {
-  if(game.phase==='cao-choice')return [];
+  if(['cao-choice','game-start-choice'].includes(game.phase))return [];
   if(game.players[game.currentPlayer].skillId==='cao-cao'&&game.players[game.currentPlayer].skillState.caoMode===3)return [];
   const piece=topCreativePiece(game.board[from]??{stack:[]});
   if(!piece || piece.player!==game.currentPlayer) return [];
@@ -84,7 +87,8 @@ export function findCreativeWin(board,player,required=5) {
 
 export function placeCreativePiece(state,index,level) {
   const game=clone(state),rank=Number(level),player=game.currentPlayer;
-  if(game.phase==='cao-choice')throw new Error('请先完成【篡汉】抉择');
+  if(game.phase==='cao-choice')throw new Error('请先完成【归心】抉择');
+  if(game.phase==='game-start-choice')throw new Error('请先完成【吐哺】抉择');
   if(game.players[player].skillId==='cao-cao'&&game.players[player].skillState.caoMode===0)return placeCaoRandomPiece(game);
   if(game.winner || !legalCreativePlacements(game,rank).includes(index)) throw new Error('该等级棋子不能落在这里');
   payCreativeAction(game);
@@ -111,10 +115,8 @@ function placeCaoRandomPiece(game){
   if(game.winner||!hand.length||!empty.length)throw new Error('【归心】没有可随机放置的手牌或空位');
   const level=hand[Math.floor(Math.random()*hand.length)],index=empty[Math.floor(Math.random()*empty.length)];
   actor.inventory[level]--;game.board[index].stack.push({player,level});game.history.push({type:'place',player,index,level,randomByCao:true});
-  const lowest=CREATIVE_LEVELS.find(rank=>rank<7&&actor.inventory[rank]>0);
-  if(lowest){actor.inventory[lowest]--;actor.inventory[lowest+1]++}
   resolveCreativeAfterAction(game,{player,index,action:'place',level});
-  const message=`【归心】随机将${level}级棋子放在第${Math.floor(index/CREATIVE_SIZE)+1}行第${index%CREATIVE_SIZE+1}列${lowest?`，手中最低的${lowest}级棋子升至${lowest+1}级`:''}`;
+  const message=`【归心】随机将${level}级棋子放在第${Math.floor(index/CREATIVE_SIZE)+1}行第${index%CREATIVE_SIZE+1}列`;
   game.lastEffect=game.lastEffect?{player,skill:'cao-cao',message:`${game.lastEffect.message}；${message}`}:{player,skill:'cao-cao',message};
   return finishCreativeAction(game);
 }
@@ -127,20 +129,31 @@ export function recycleCreativePiece(state,index){const game=clone(state),actor=
 export function skipCreativeBonus(state){const game=clone(state);if(game.phase!=='bonus')throw new Error('当前没有追加行动');return finishCreativeAction(game)}
 export function skipZhangFeiBonus(state){const game=clone(state);if(game.phase!=='zhangfei-bonus')throw new Error('当前没有狂啸追加行动');resolveCreativeTurnEnd(game);return advanceCreativeTurn(game)}
 export function skipCaoSecond(state){const game=clone(state);if(game.phase!=='cao-second'||game.players[game.currentPlayer].skillId!=='cao-cao')throw new Error('当前没有曹操的第二次放置');resolveCreativeTurnEnd(game);return advanceCreativeTurn(game)}
-export function resolveCaoCuanHan(state,choice){
+export function resolveCaoGuixinChoice(state,choice){
   const game=clone(state),actor=game.players[game.currentPlayer];
-  if(game.phase!=='cao-choice'||actor.skillId!=='cao-cao'||actor.skillState.caoCuanHanResolved)throw new Error('当前没有【篡汉】抉择');
-  if(choice==='usurp'){
-    for(let level=1;level<=5;level++)actor.inventory[level]=0;
+  if(game.phase!=='cao-choice'||actor.skillId!=='cao-cao')throw new Error('当前没有【归心】抉择');
+  if(choice==='abandon'){
+    for(let level=1;level<=4;level++)actor.inventory[level]=0;
     actor.skillState.caoGuixinActive=false;
     actor.skillState.caoMode=null;
-    game.lastEffect={player:game.currentPlayer,skill:'cao-cao',message:'【篡汉】失去手中全部1～5级棋子，并永久失去【归心】'};
-  }else if(choice==='renounce'){
-    actor.skillState.caoCuanHanActive=false;
-    game.lastEffect={player:game.currentPlayer,skill:'cao-cao',message:'【篡汉】选择保留【归心】，永久失去【篡汉】'};
-  }else throw new Error('无效的【篡汉】抉择');
-  actor.skillState.caoCuanHanResolved=true;
+    game.lastEffect={player:game.currentPlayer,skill:'cao-cao',message:'【归心】失去手中全部1～4级棋子，并永久失去【归心】'};
+  }else if(choice==='promote'){
+    const count=actor.inventory[5];actor.inventory[5]=0;actor.inventory[6]+=count;
+    game.lastEffect={player:game.currentPlayer,skill:'cao-cao',message:`【归心】将手中${count}枚5级棋子全部升为6级`};
+  }else throw new Error('无效的【归心】抉择');
   game.phase='main';
+  return game;
+}
+export function resolveCaoTuBu(state,choice){
+  const game=clone(state),actor=game.players[game.currentPlayer];
+  if(game.phase!=='game-start-choice'||actor.skillId!=='cao-cao')throw new Error('当前没有【吐哺】抉择');
+  if(choice==='five')actor.inventory[5]++;
+  else if(choice==='fours')actor.inventory[4]+=2;
+  else throw new Error('无效的【吐哺】抉择');
+  game.lastEffect={player:game.currentPlayer,skill:'cao-cao',message:choice==='five'?'【吐哺】获得1枚5级棋子':'【吐哺】获得2枚4级棋子'};
+  game.gameStartQueue.shift();
+  if(game.gameStartQueue.length){game.currentPlayer=game.gameStartQueue[0];game.phase='game-start-choice'}
+  else{game.currentPlayer='black';game.phase='main';resolveCreativeTurnStart(game)}
   return game;
 }
 export function resolveLvBuEnd(state,index=null){const game=clone(state),actor=game.players[game.currentPlayer];if(game.phase!=='lvbu-end'||actor.skillId!=='lv-bu')throw new Error('当前不能发动单三');if(index!==null){const piece=topCreativePiece(game.board[index]??{stack:[]});if(!piece||piece.player!==game.currentPlayer||piece.level<5)throw new Error('请选择己方一枚5级以上顶层棋子');const destroyedLevel=piece.level,rewardLevel=destroyedLevel-4;game.board[index].stack.length=0;actor.inventory[rewardLevel]+=2;actor.skillState.fury=Math.min(3,actor.skillState.fury+1);game.lastEffect={player:game.currentPlayer,skill:'lv-bu',message:`【单三】摧毁整叠${destroyedLevel}级顶层棋子，获得两枚${rewardLevel}级棋子，霸气恢复至${actor.skillState.fury}点`}}return advanceCreativeTurn(game)}

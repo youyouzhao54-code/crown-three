@@ -36,9 +36,10 @@ export const CREATIVE_ROLES = Object.freeze([
   },
   {
     id: 'cao-cao', name: '曹操', title: '魏武', faction: '魏',
+    art: { avatar:'./public/images/generals/avatars/cao-cao-v1.png', skin:'./public/images/generals/skins/cao-cao-v1.png' },
     description: '治世之能臣，乱世之奸雄。善借敌势，因心而变。',
     inventory: { 1: 18, 2: 6, 3: 0, 4: 0, 5: 1, 6: 0, 7: 0 },
-    skill: { id: 'cao-cao', name: '奸雄 · 归心 · 篡汉', description: '【奸雄】己方棋子被压制时，获得一枚与压制棋子同级的棋子（最高按5级）；曹操压制敌棋时，被压制棋子返回对手手中。【归心】回合开始时按手中5级棋子数改变本回合规则：0枚随机放置并升级最低手牌；1枚不能压制；2枚获得1级；3枚可放置两次且回合末收回最高级盘面棋；4枚失去1级并升级最高的低阶手牌；5枚以上全部升为6级。【篡汉】本局发动过归心最后一项后，行动阶段前必须选择：失去手中全部1～5级棋子并永久失去归心，或永久失去篡汉。', hooks: { canSuppress:true, afterSuppress:true, onTurnStart:true, onTurnEnd:true } },
+    skill: { id: 'cao-cao', name: '奸雄 · 归心 · 吐哺', description: '【奸雄】己方棋子被压制时，获得一枚与压制棋子同级的棋子（最高按5级）；曹操压制敌棋时，被压制棋子返回对手手中。【归心】回合开始按手中5级棋子数改变规则：0枚随机放置，回合末升级1～4级中最高者；1枚不能通过放置压制；2枚获得1级；3枚可放置两次且回合末收回最高盘面棋；4枚失去1级并升级1～4级中最低者；5枚以上使永久回合末随机获取次数+1，并选择失去全部1～4级与归心，或将全部5级升为6级。【吐哺】对局开始时选择获得一枚5级或两枚4级棋子。', hooks: { canSuppress:true, afterSuppress:true, onGameStart:true, onTurnStart:true, onTurnEnd:true } },
   },
 ]);
 

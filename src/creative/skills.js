@@ -62,7 +62,6 @@ export function resolveCreativeRecycle(game,{player,piece}){
 
 export function canCreativeSuppress(game,{player,level,target}){
   if(!target||target.player===player)return false;
-  if(game.players[player].skillId==='cao-cao'&&game.players[player].skillState.caoMode===1)return false;
   if(game.players[target.player].skillId==='lu-xun'&&target.level%2===0&&level%2===1)return false;
   if(game.players[target.player].skillId==='lv-bu'&&level<target.level+2)return false;
   if(game.players[player].skillId==='lv-bu')return level>=target.level;
@@ -111,12 +110,12 @@ export function resolveCreativeTurnStart(game,rng=Math.random){
     if(mode===2){actor.inventory[1]++;messages.push('获得1枚1级棋子')}
     if(mode===4){
       if(actor.inventory[1]>0){actor.inventory[1]--;messages.push('失去1枚1级棋子')}
-      const highest=[4,3,2,1].find(level=>actor.inventory[level]>0);
-      if(highest){actor.inventory[highest]--;actor.inventory[highest+1]++;messages.push(`手中一枚${highest}级棋子升至${highest+1}级`)}
+      const lowest=[1,2,3,4].find(level=>actor.inventory[level]>0);
+      if(lowest){actor.inventory[lowest]--;actor.inventory[lowest+1]++;messages.push(`手中一枚${lowest}级棋子升至${lowest+1}级`)}
     }
-    if(mode===5){const count=actor.inventory[5];actor.inventory[5]=0;actor.inventory[6]+=count;actor.skillState.caoFinalTriggered=true;messages.push(`${count}枚5级棋子全部升为6级`)}
+    if(mode===5){actor.skillState.caoEndDraws=(actor.skillState.caoEndDraws??0)+1;messages.push(`此后每个回合结束随机获取次数增至${actor.skillState.caoEndDraws}`)}
     game.lastEffect={player,skill:'cao-cao',message:messages.join('；')};
-    if(actor.skillState.caoFinalTriggered&&actor.skillState.caoCuanHanActive!==false&&!actor.skillState.caoCuanHanResolved)game.phase='cao-choice';
+    if(mode===5)game.phase='cao-choice';
   }
   if(actor.skillId==='lv-bu'&&!game.winner){
     actor.skillState.fury=Math.min(3,(actor.skillState.fury??1)+1);
@@ -135,9 +134,19 @@ export function resolveCreativeTurnStart(game,rng=Math.random){
 
 export function resolveCreativeTurnEnd(game,rng=Math.random){
   const player=game.currentPlayer,actor=game.players[player];
-  if(actor.skillId==='cao-cao'&&actor.skillState.caoMode===3&&!game.winner){
-    const visible=game.board.map((cell,index)=>({piece:topPiece(cell),index})).filter(item=>item.piece?.player===player);
-    if(visible.length){const highest=Math.max(...visible.map(item=>item.piece.level)),candidates=visible.filter(item=>item.piece.level===highest),chosen=candidates[Math.floor(rng()*candidates.length)];game.board[chosen.index].stack.pop();actor.inventory[highest]++;const message=`【归心】回合结束，随机收回1枚${highest}级棋子`;game.lastEffect=game.lastEffect?{player,skill:'cao-cao',message:`${game.lastEffect.message}；${message}`}:{player,skill:'cao-cao',message}}
+  if(actor.skillId==='cao-cao'&&!game.winner){
+    const messages=[];
+    if(actor.skillState.caoGuixinActive!==false&&actor.skillState.caoMode===0){
+      const highest=[4,3,2,1].find(level=>actor.inventory[level]>0);
+      if(highest){actor.inventory[highest]--;actor.inventory[highest+1]++;messages.push(`【归心】手中一枚${highest}级棋子升至${highest+1}级`)}
+    }
+    if(actor.skillState.caoGuixinActive!==false&&actor.skillState.caoMode===3){
+      const visible=game.board.map((cell,index)=>({piece:topPiece(cell),index})).filter(item=>item.piece?.player===player);
+      if(visible.length){const highest=Math.max(...visible.map(item=>item.piece.level)),candidates=visible.filter(item=>item.piece.level===highest),chosen=candidates[Math.floor(rng()*candidates.length)];game.board[chosen.index].stack.pop();actor.inventory[highest]++;messages.push(`【归心】随机收回1枚${highest}级棋子`)}
+    }
+    const draws=actor.skillState.caoEndDraws??0;
+    if(draws>0){const gained=[];for(let count=0;count<draws;count++){const level=1+Math.floor(rng()*6);actor.inventory[level]++;gained.push(level)}messages.push(`【归心】回合末随机获得${gained.map(level=>`${level}级`).join('、')}棋子`)}
+    if(messages.length){const message=messages.join('；');game.lastEffect=game.lastEffect?{player,skill:'cao-cao',message:`${game.lastEffect.message}；${message}`}:{player,skill:'cao-cao',message}}
     return game;
   }
   if(actor.skillId!=='lu-xun'||game.winner)return game;
